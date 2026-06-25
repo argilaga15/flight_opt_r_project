@@ -1,0 +1,44 @@
+This version includes:
+
+Airway network using NetworkX
+Wind field model (headwind/tailwind effects)
+Aircraft mass-dependent fuel burn
+PSO route optimization (pyswarms)
+Optuna hyperparameter tuning
+DEAP NSGA-II multi-objective optimization
+Monte Carlo weather uncertainty
+Route visualization
+Pareto front visualization
+
+Next improvements:
+Real airway data (OpenSky, Eurocontrol, FAA/NATS datasets)
+Aircraft-specific performance (A320/B787 fuel curves)
+Altitude as a decision variable
+Time-dependent winds from NOAA/ECMWF weather grids
+Pyomo + Gurobi benchmark against the heuristic solutions
+Statistical comparison tables (runtime, fuel, emissions, robustness)
+
+Added aircraft-specific performance curves for A320 and B787 in [main-pso-hyp-mcarlo.py (line 74)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L74).
+What changed:
+Added per-aircraft profiles with empty mass, payload, initial fuel, cruise speed, and a mass-based fuel burn curve in [main-pso-hyp-mcarlo.py (line 74)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L74).
+Replaced the single generic fuel formula with interpolation over the selected aircraft’s curve in [main-pso-hyp-mcarlo.py (line 129)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L129).
+Threaded aircraft_type through route evaluation, Monte Carlo cost, PSO, and Optuna in [main-pso-hyp-mcarlo.py (line 172)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L172), [main-pso-hyp-mcarlo.py (line 218)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L218), [main-pso-hyp-mcarlo.py (line 242)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L242), [main-pso-hyp-mcarlo.py (line 260)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L260), and [main-pso-hyp-mcarlo.py (line 288)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L288).
+Added a CLI switch so you can choose the aircraft profile with --aircraft A320 or --aircraft B787 in [main-pso-hyp-mcarlo.py (line 414)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L414).
+Verification:
+python -m py_compile main-pso-hyp-mcarlo.py
+Smoke test confirmed the profile lookup returns the expected cruise speeds for both aircraft.
+One note: the curves are intentionally lightweight placeholders, not certified manufacturer data.
+
+Split into separate modules and kept the original runner as a thin entrypoint. What changed:
+Aircraft data moved to [aircraft_profiles.py (line 7)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/aircraft_profiles.py#L7)
+Network layout moved to [network_model.py (line 1)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/network_model.py#L1)
+Wind model moved to [weather_model.py (line 1)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/weather_model.py#L1)
+Fuel burn logic moved to [fuel_model.py (line 1)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/fuel_model.py#L1)
+Route decode/evaluation moved to [route_model.py (line 1)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/route_model.py#L1)
+PSO, Optuna, and NSGA-II orchestration moved to [optimization_model.py (line 1)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/optimization_model.py#L1)
+Plotting moved to [visualization_model.py (line 1)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/visualization_model.py#L1)
+The entry script is now just orchestration in [main-pso-hyp-mcarlo.py (line 18)](/D:/SyncCIMNE/python/Optimization/flight_opt_r_project/main-pso-hyp-mcarlo.py#L18)
+
+How to run:
+python main-pso-hyp-mcarlo.py --aircraft A320
+python main-pso-hyp-mcarlo.py --aircraft B787
