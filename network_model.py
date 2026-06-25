@@ -1,47 +1,33 @@
-"""
-Airway network definition.
-"""
+"""Airway network definition and runtime configuration."""
 
-import networkx as nx
-import numpy as np
+from __future__ import annotations
 
-NODES = {
-    "A": (0, 0),
-    "W1": (150, 100),
-    "W2": (250, -50),
-    "W3": (400, 150),
-    "W4": (550, 0),
-    "W5": (700, 100),
-    "W6": (850, -50),
-    "B": (1000, 0),
-}
+import os
 
-AIRWAYS = [
-    ("A", "W1"),
-    ("A", "W2"),
-    ("W1", "W3"),
-    ("W2", "W3"),
-    ("W2", "W4"),
-    ("W3", "W5"),
-    ("W4", "W5"),
-    ("W4", "W6"),
-    ("W5", "B"),
-    ("W6", "B"),
-]
+from airway_data import build_airway_network
 
+DEFAULT_SOURCE = os.getenv("AIRWAY_DATA_SOURCE", "synthetic")
+DEFAULT_DATA_PATH = os.getenv("AIRWAY_DATA_PATH", "")
+DEFAULT_ORIGIN = os.getenv("AIRWAY_ORIGIN", "A")
+DEFAULT_DESTINATION = os.getenv("AIRWAY_DESTINATION", "B")
+DEFAULT_ROUTE_COUNT = int(os.getenv("AIRWAY_ROUTE_COUNT", "8"))
+DEFAULT_SNAP_PRECISION_DEG = float(os.getenv("AIRWAY_SNAP_PRECISION_DEG", "0.05"))
+DEFAULT_SEGMENT_GAP_MINUTES = float(os.getenv("AIRWAY_SEGMENT_GAP_MINUTES", "30"))
 
-def build_graph():
-    graph = nx.Graph()
+NETWORK = build_airway_network(
+    source=DEFAULT_SOURCE,
+    path=DEFAULT_DATA_PATH,
+    origin=DEFAULT_ORIGIN,
+    destination=DEFAULT_DESTINATION,
+    max_routes=DEFAULT_ROUTE_COUNT,
+    snap_precision_deg=DEFAULT_SNAP_PRECISION_DEG,
+    segment_gap_minutes=DEFAULT_SEGMENT_GAP_MINUTES,
+)
 
-    for node, pos in NODES.items():
-        graph.add_node(node, pos=pos)
-
-    for u, v in AIRWAYS:
-        p1 = np.array(NODES[u])
-        p2 = np.array(NODES[v])
-        graph.add_edge(u, v, distance=np.linalg.norm(p2 - p1))
-
-    return graph
-
-
-GRAPH = build_graph()
+GRAPH = NETWORK.graph
+NODES = NETWORK.nodes
+AIRWAYS = NETWORK.airways
+ROUTE_CANDIDATES = NETWORK.route_catalog
+ROUTE_DECISION_DIMENSIONS = NETWORK.decision_dimensions
+NETWORK_METADATA = NETWORK.metadata
+NETWORK_SOURCE = NETWORK.source

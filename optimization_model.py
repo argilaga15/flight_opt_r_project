@@ -10,7 +10,13 @@ from deap import base, creator, tools, algorithms
 from pyswarms.single import GlobalBestPSO
 
 from aircraft_profiles import DEFAULT_AIRCRAFT
-from route_model import decode_particle, evaluate_route, monte_carlo_cost
+from network_model import ROUTE_DECISION_DIMENSIONS
+from route_model import (
+    decode_particle,
+    evaluate_route,
+    monte_carlo_cost,
+    monte_carlo_route_stats,
+)
 
 
 def swarm_objective(X, aircraft_type=DEFAULT_AIRCRAFT):
@@ -26,15 +32,15 @@ def swarm_objective(X, aircraft_type=DEFAULT_AIRCRAFT):
 def run_pso(w, c1, c2, swarm_size, iters, aircraft_type=DEFAULT_AIRCRAFT):
     optimizer = GlobalBestPSO(
         n_particles=swarm_size,
-        dimensions=3,
+        dimensions=ROUTE_DECISION_DIMENSIONS,
         options={
             "c1": c1,
             "c2": c2,
             "w": w,
         },
         bounds=(
-            np.zeros(3),
-            np.ones(3),
+            np.zeros(ROUTE_DECISION_DIMENSIONS),
+            np.ones(ROUTE_DECISION_DIMENSIONS),
         ),
     )
 
@@ -60,7 +66,7 @@ def optuna_objective(trial, aircraft_type=DEFAULT_AIRCRAFT):
     return cost
 
 
-def build_nsga_toolbox(aircraft_type=DEFAULT_AIRCRAFT):
+def build_nsga_toolbox(aircraft_type=DEFAULT_AIRCRAFT, mc_runs=20):
     if not hasattr(creator, "FitnessMulti"):
         creator.create("FitnessMulti", base.Fitness, weights=(-1.0, -1.0, -1.0))
 
@@ -74,13 +80,13 @@ def build_nsga_toolbox(aircraft_type=DEFAULT_AIRCRAFT):
         tools.initRepeat,
         creator.Individual,
         toolbox.attr_float,
-        n=3,
+        n=ROUTE_DECISION_DIMENSIONS,
     )
     toolbox.register("population", tools.initRepeat, list, toolbox.individual)
 
     def nsga_eval(ind):
         route = decode_particle(ind)
-        return evaluate_route(route, aircraft_type=aircraft_type)
+        return monte_carlo_route_stats(route, runs=mc_runs, aircraft_type=aircraft_type)
 
     toolbox.register("evaluate", nsga_eval)
     toolbox.register("mate", tools.cxBlend, alpha=0.5)
@@ -89,8 +95,8 @@ def build_nsga_toolbox(aircraft_type=DEFAULT_AIRCRAFT):
     return toolbox
 
 
-def run_nsga(aircraft_type=DEFAULT_AIRCRAFT, population_size=100, generations=50):
-    toolbox = build_nsga_toolbox(aircraft_type=aircraft_type)
+def run_nsga(aircraft_type=DEFAULT_AIRCRAFT, population_size=100, generations=50, mc_runs=20):
+    toolbox = build_nsga_toolbox(aircraft_type=aircraft_type, mc_runs=mc_runs)
     pop = toolbox.population(n=population_size)
 
     algorithms.eaMuPlusLambda(

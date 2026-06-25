@@ -4,6 +4,7 @@ Plotting helpers for routes and Pareto fronts.
 
 import numpy as np
 import matplotlib.pyplot as plt
+from deap import tools
 
 from network_model import AIRWAYS, NODES
 
@@ -27,11 +28,44 @@ def plot_route(route):
 
 
 def plot_pareto(pop):
-    vals = np.array([ind.fitness.values for ind in pop])
+    if not pop:
+        return
+
+    fronts = tools.sortNondominated(pop, k=len(pop), first_front_only=True)
+    front = fronts[0] if fronts else []
+    front_vals = np.array([ind.fitness.values for ind in front], dtype=float)
+    all_vals = np.array([ind.fitness.values for ind in pop], dtype=float)
 
     plt.figure(figsize=(7, 5))
-    plt.scatter(vals[:, 0], vals[:, 1])
-    plt.xlabel("Fuel")
-    plt.ylabel("Time")
+
+    if all_vals.size:
+        unique_all = np.unique(np.round(all_vals, 8), axis=0)
+        plt.scatter(
+            unique_all[:, 0],
+            unique_all[:, 1],
+            c="lightgray",
+            alpha=0.35,
+            s=22,
+            label="Population",
+        )
+
+    if front_vals.size:
+        unique_front = np.unique(np.round(front_vals, 8), axis=0)
+        scatter = plt.scatter(
+            unique_front[:, 0],
+            unique_front[:, 1],
+            c=unique_front[:, 2] if unique_front.shape[1] > 2 else None,
+            cmap="viridis",
+            s=80,
+            edgecolors="black",
+            linewidths=0.5,
+            label="Pareto front",
+        )
+        if unique_front.shape[1] > 2:
+            plt.colorbar(scatter, label="Weather-risk std dev")
+
+    plt.xlabel("Mean fuel")
+    plt.ylabel("Mean time")
     plt.title("Pareto Front")
+    plt.legend(loc="best")
     plt.show()
